@@ -1,29 +1,47 @@
-$(function(){
-  init();
-})
+var sounds = ['bass-clarinet', 'bassoon', 'clarinet', 'double-bass', 'drums', 'flute', 'guitar', 'harp', 'pad', 'piano', 'snare', 'synth'];
+var loadedSounds = [];
 
-function init(){
-  var audioPath = "audio/";
-  var manifest = [
-    {id:"bassClarinet", src:"bass-clarinet.mp3"},
-    {id:"bassoon", src:"bassoon.mp3"},
-    {id:"clarinet", src:"clarinet.mp3"},
-    {id:"doubleBass", src:"double-bass.mp3"},
-    {id:"drums", src:"drums.mp3"},
-    {id:"flute", src:"flute.mp3"},
-    {id:"guitar", src:"guitar.mp3"},
-    {id:"harp", src:"harp.mp3"},
-    {id:"pad", src:"pad.mp3"},
-    {id:"piano", src:"piano.mp3"},
-    {id:"snare", src:"snare.mp3"},
-    {id:"synth", src:"synth.mp3"}
-  ];
-  // Put ogg files here eventually
-  // createjs.Sound.alternateExtensions = ["mp3"];
-  createjs.Sound.addEventListener("fileload", handleLoad);
-  createjs.Sound.registerManifest(manifest, audioPath);
+function getFiles(){
+  var soundFiles = [];
+  for(var i = 0; i < sounds.length; i++){
+    soundFiles.push('../audio/' + sounds[i] + '.mp3')
+  }
+  return soundFiles;
 }
 
-function handleLoad(event) {
-  createjs.Sound.play(event.src);
+function Track(name, buffer) {
+  this.track = name;
+  this.audio = audioContext.createBufferSource();
+  this.audio.loop = true;
+  this.audio.buffer = buffer;
+  this.audio.connect(audioContext.destination);
+}
+
+var audioContext;
+var bufferLoader;
+
+window.addEventListener('load', init, false);
+
+function init() {
+  window.AudioContext = window.AudioContext||window.webkitAudioContext;
+  audioContext = new AudioContext();
+
+  bufferLoader = new BufferLoader(
+    audioContext,
+    getFiles(),
+    finishedLoading
+  );
+
+  bufferLoader.load();
+}
+
+function finishedLoading(bufferList){
+  for(var i=0;i<bufferList.length;i++){
+    var soundPosition = sounds.indexOf(bufferList[i].name);
+    sounds[soundPosition] = new Track(bufferList[i].name, bufferList[i]);
+    loadedSounds.push(sounds[soundPosition]);
+  }
+  loadedSounds.forEach(function(sound){
+    sound.audio.start(0);
+  });
 }
