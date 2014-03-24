@@ -28,19 +28,18 @@ function makeCircle(radius, center, direction, offset){
 //   })
 // }
 
-var text = new PointText({
-  point: view.center,
-  justification: 'center',
-  fontSize: view.size.width / 5 + 'pt',
-  fillColor: getRandomColor()
-});
 
 var explosionLayer = new Layer();
 
 var bubbleLayer = new Layer();
 for (var i = 0; i < count; i++) {
   circle = makeCircle(i / count * 20, Point.random() * view.size);
-}
+var text = new PointText({
+  point: view.center,
+  justification: 'center',
+  fontSize: view.size.width / 5 + 'pt',
+  fillColor: getRandomColor()
+});
 
 function onFrame(event) {
   text.content = score;
@@ -148,3 +147,4 @@ function getRandomColor() {
   }
   return color;
 }
+
