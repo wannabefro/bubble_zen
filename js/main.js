@@ -27,12 +27,6 @@ function makeCircle(radius, center, direction, offset){
 //     strokeColor: getRandomColor()
 //   })
 // }
-var text = new PointText({
-  point: view.center,
-  justification: 'center',
-  fontSize: view.size.width / 5 + 'pt',
-  fillColor: getRandomColor()
-});
 
 var explosionLayer = new Layer();
 
@@ -40,6 +34,12 @@ var bubbleLayer = new Layer();
 for (var i = 0; i < count; i++) {
   circle = makeCircle(i / count * 20, Point.random() * view.size);
 }
+var text = new PointText({
+  point: view.center,
+  justification: 'center',
+  fontSize: view.size.width / 5 + 'pt',
+  fillColor: getRandomColor()
+});
 
 function onFrame(event) {
   text.content = score;
@@ -99,6 +99,8 @@ function onMouseDown(event){
   for (var i = 0; i < count; i++) {
     var item = project.activeLayer.children[i];
     if (item.contains(event.point)){
+      currentStage++;
+      makeMusic();
       explosions = [];
       radius = item.bounds.width;
       center = item.getInteriorPoint();
