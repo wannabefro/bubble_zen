@@ -2,6 +2,47 @@
 var count = 150;
 var explosionCount = 50;
 var score = 0;
+var points = 50;
+var smooth = true;
+var audioLayer;
+var frame = 0;
+var backgroundMultiplier = 1;
+var initial = false;
+var drawingPath;
+var wavePath;
+
+$(function(){
+  background();
+})
+
+function background(){
+  audioLayer = new Layer();
+  wavePath = new Path();
+  var pathHeight = view.size.height;
+  wavePath.fillColor = getRandomColor();
+  initializePath();
+  initializeDrawing();
+}
+
+function initializeDrawing(){
+  drawingPath = new Path();
+  drawingPath.strokeColor = 'black';
+  drawingPath.strokeWidth = 10;
+  drawingPath.add(Math.random() * view.size.width, Math.random() * view.size.height)
+}
+
+function initializePath() {
+  center = view.center;
+  width = view.size.width + view.size.width / 10;
+  height = view.size.height / 2;
+  wavePath.segments = [];
+  wavePath.add(view.bounds.bottomLeft);
+  for (var i = 1; i < points; i++) {
+    var point = new Point((width / points * i) - view.size.width / 20, center.y);
+    wavePath.add(point);
+  }
+  wavePath.add(view.bounds.bottomRight);
+}
 
 function makeCircle(radius, center, direction, offset){
   var path = new Path.Circle({
@@ -19,55 +60,78 @@ function makeCircle(radius, center, direction, offset){
   return path;
 }
 
-// function makeSquare(width, origin){
-//   var path = new Path.Rectangle({
-//     point: [origin, origin],
-//     size: [width, width],
-//     fillColor: getRandomColor(),
-//     strokeColor: getRandomColor()
-//   })
-// }
-
 var explosionLayer = new Layer();
 
 var bubbleLayer = new Layer();
 for (var i = 0; i < count; i++) {
   circle = makeCircle(i / count * 20, Point.random() * view.size);
 }
-var text = new PointText({
-  point: view.center,
-  justification: 'center',
-  fontSize: view.size.width / 5 + 'pt',
-  fillColor: getRandomColor()
-});
+// var text = new PointText({
+//   point: view.center,
+//   justification: 'center',
+//   fontSize: view.size.width / 5 + 'pt',
+//   fillColor: getRandomColor()
+// });
+
+function animateBackground(){
+  var freqByteData = new Uint8Array(audioAnalyser.frequencyBinCount);
+  audioAnalyser.getByteFrequencyData(freqByteData);
+  for (var i = 1; i < points; i++) {
+    var item = wavePath.segments[i];
+    var itemPoint = item.point.y;
+    magnitude = freqByteData[i];
+    if(initial && (magnitude * backgroundMultiplier - 1 > itemPoint || itemPoint > magnitude * backgroundMultiplier + 1)){
+      item.point.y = magnitude * backgroundMultiplier + view.size.height / 4;
+    }
+  }
+  wavePath.smooth();
+  wavePath.fillColor.hue += 0.5;
+}
+
+function draw(){
+  lastPoint = drawingPath.lastSegment;
+  drawingPath.add(lastPoint.x + (Math.random() * 5 - 2.5), lastPoint.y + (Math.random() * 5 - 2.5));
+  drawingPath.simplify();
+  drawingPath.smooth();
+}
+
 
 function onFrame(event) {
-  text.content = score;
-  for (var i = 0; i < bubbleLayer.children.length; i++) {
-    var item = bubbleLayer.children[i];
-    if (item.bounds.width > 15){
-      item.position.x -= item.bounds.width / 30;
-      if (item.bounds.right < 0){
-        item.position.x = view.size.width + item.bounds.width;
-      }
-    } else {
-      item.position.x += item.bounds.width / 30;
-      if (item.bounds.left > view.size.width){
-        item.position.x = -item.bounds.width;
-      }
+  if(loaded){
+    animateBackground();
+    if(!initial){
+      initial = true;
     }
-    item.fillColor.hue += 1;
-  }
-
-  if (explosionLayer.children.length > 0){
-    for(var i = 0; i < explosionLayer.children.length; i++){
-      var item = explosionLayer.children[i];
-      if (!contains(item)){
-        item.remove();
+    draw();
+    // text.content = score;
+    for (var i = 0; i < bubbleLayer.children.length; i++) {
+      var item = bubbleLayer.children[i];
+      if (item.bounds.width > 15){
+        item.position.x -= item.bounds.width / 30;
+        if (item.bounds.right < 0){
+          item.position.x = view.size.width + item.bounds.width;
+        }
       } else {
-        moveItem(item);
+        item.position.x += item.bounds.width / 30;
+        if (item.bounds.left > view.size.width){
+          item.position.x = -item.bounds.width;
+        }
+      }
+      item.fillColor.hue += 1;
+    }
+
+    if (explosionLayer.children.length > 0){
+      for(var i = 0; i < explosionLayer.children.length; i++){
+        var item = explosionLayer.children[i];
+        if (!contains(item)){
+          item.remove();
+        } else {
+          moveItem(item);
+        }
       }
     }
+  } else {
+    // text.content = 'loading';
   }
 }
 

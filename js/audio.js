@@ -2,6 +2,7 @@ var sounds = ['bass-clarinet', 'bassoon', 'clarinet', 'double-bass', 'drums', 'f
 var loadedSounds = [];
 var currentStage = 0
 var playOrder = [['pad', 'drums'], ['piano', 'synth'], ['guitar'], ['harp'], ['bassoon', 'clarinet', 'bass-clarinet'], ['snare'], ['flute']];
+var loaded = false;
 
 function getFiles(){
   var soundFiles = [];
@@ -14,15 +15,15 @@ function getFiles(){
 function Track(name, buffer) {
   this.track = name;
   this.audio = audioContext.createBufferSource();
-  this.gainNode = audioContext.createGain();
-  this.gainNode.gain.value = 0.
-  this.audio.connect(this.gainNode);
   this.audio.loop = true;
   this.audio.buffer = buffer;
-  this.gainNode.connect(audioContext.destination);
+  this.audio.gain.value = 0;
+  this.audio.connect(submix);
 }
 
 var audioContext;
+var audioAnalyser;
+var submix;
 var bufferLoader;
 
 window.addEventListener('load', init, false);
@@ -30,6 +31,11 @@ window.addEventListener('load', init, false);
 function init() {
   window.AudioContext = window.AudioContext||window.webkitAudioContext;
   audioContext = new AudioContext();
+  submix = audioContext.createGain();
+  audioAnalyser = audioContext.createAnalyser();
+  audioAnalyser.smoothingTimeConstant = 0.85;
+  submix.connect(audioAnalyser);
+  audioAnalyser.connect(audioContext.destination);
 
   bufferLoader = new BufferLoader(
     audioContext,
@@ -47,13 +53,14 @@ function finishedLoading(bufferList){
   loadedSounds.forEach(function(sound){
     sound.audio.start(0);
   });
+  loaded = true;
   makeMusic();
 }
 
 function makeMusic(){
   loadedSounds.forEach(function(sound){
     if($.inArray(sound.track, playOrder[currentStage]) != -1){
-      sound.gainNode.gain.value = 1;
+      sound.audio.gain.value = 1;
     }
   })
 }
